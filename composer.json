@@ -1,0 +1,18 @@
+{
+    "name": "gsnw/vitamin-d-calculator",
+    "description": "GSNW Vitamin D Calculator",
+    "type": "library",
+    "license": "AGPL-3.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "Gsnw\\VitaminDCalculator\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "German Service Network",
+            "email": "support@gsnw.de"
+        }
+    ],
+    "require": {}
+}
