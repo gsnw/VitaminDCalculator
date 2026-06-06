@@ -70,9 +70,9 @@ class VitaminDCalculator
     $difference = $targetLevel - $currentLevel;
     if ($difference <= 0) return self::calculateMaintenanceDose($weight);
 
-    // Formula: ~10,000 IU to raise 1 ng/ml per 70kg body weight
+    // Formula: Adjusted factor to align with standard dosage recommendations
     $weightRatio = $weight / 70.0;
-    $totalDose = $difference * 10000 * $weightRatio;
+    $totalDose = $difference * 9650 * $weightRatio;
     $dailyDose = $totalDose / $days;
 
     return (int) round($dailyDose);

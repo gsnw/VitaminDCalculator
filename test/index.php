@@ -22,5 +22,5 @@ $loadingDose = VitaminDCalculator::calculateDailyDose($currentLevel, $targetLeve
 $maintenanceDose = VitaminDCalculator::calculateMaintenanceDose($weight);
 
 echo "\n=== Direct calculation ===\n";
-echo "Ladedosis (" . $days . " Tage): " . $loadingDose . " IE/Tag\n";
-echo "Erhaltungsdosis: " . $maintenanceDose . " IE/Tag\n";
+echo "Loading dose (" . $days . " days): " . $loadingDose . " IU/day\n";
+echo "Maintenance dose: " . $maintenanceDose . " IU/day\n";
