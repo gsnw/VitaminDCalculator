@@ -28,7 +28,7 @@ class VitaminDCalculator
     'de' => [
       'current_level' => "Aktueller Spiegel: %.1f ng/ml\n",
       'target_level' => "Zielspiegel: %.1f ng/ml\n\n",
-      'loading_dose' => "Empfohlene Ladedosis: %d IE/Tag für 2–3 Monate, um den Zielwert zu erreichen.\n",
+      'loading_dose' => "Empfohlene Ladedosis: %d IE/Tag für %d Tage, um den Zielwert zu erreichen.\n",
       'maintenance_dose' => "Empfohlene Erhaltungsdosis: %d IE/Tag, um den Spiegel zu halten.\n",
       'already_in_range' => "Dein aktueller Spiegel ist bereits im Zielbereich oder darüber.\n",
       'warning' => "\nAchtung: Die berechnete Dosis liegt über der tolerierbaren Obergrenze von %d IE/Tag. Bitte konsultiere einen Arzt!\n",
@@ -38,7 +38,7 @@ class VitaminDCalculator
     'en' => [
       'current_level' => "Current level: %.1f ng/ml\n",
       'target_level' => "Target level: %.1f ng/ml\n\n",
-      'loading_dose' => "Recommended loading dose: %d IU/day for 2–3 months to reach the target level.\n",
+      'loading_dose' => "Recommended loading dose: %d IU/day for %d days to reach the target level.\n",
       'maintenance_dose' => "Recommended maintenance dose: %d IU/day to maintain the level.\n",
       'already_in_range' => "Your current level is already within or above the target range.\n",
       'warning' => "\nWarning: The calculated dose exceeds the safe upper limit of %d IU/day. Please consult a doctor!\n",
@@ -53,13 +53,13 @@ class VitaminDCalculator
    * @param float $currentLevel Current vitamin D level (ng/ml)
    * @param float $targetLevel Target vitamin D level (ng/ml)
    * @param float $weight Body weight in kg
-   * @param bool $isLoadingPhase Indicates whether this is the loading phase
+   * @param int $days Duration of the loading phase in days
    * @return int Recommended daily dose in IU
    * @throws \InvalidArgumentException
    */
-  public static function calculateDailyDose(float $currentLevel, float $targetLevel, float $weight = 70.0, bool $isLoadingPhase = true)
+  public static function calculateDailyDose(float $currentLevel, float $targetLevel, float $weight = 70.0, int $days = 30): int
   {
-    if ($currentLevel <= 0 || $targetLevel <= 0 || $weight <= 0) {
+    if ($currentLevel <= 0 || $targetLevel <= 0 || $weight <= 0 || $days <= 0) {
       throw new \InvalidArgumentException(self::$translations['de']['invalid_input']);
     }
 
@@ -68,23 +68,14 @@ class VitaminDCalculator
     }
 
     $difference = $targetLevel - $currentLevel;
+    if ($difference <= 0) return self::calculateMaintenanceDose($weight);
 
-    if ($difference <= 0 && !$isLoadingPhase) {
-      return self::calculateMaintenanceDose($weight);
-    }
+    // Formula: ~10,000 IU to raise 1 ng/ml per 70kg body weight
+    $weightRatio = $weight / 70.0;
+    $totalDose = $difference * 10000 * $weightRatio;
+    $dailyDose = $totalDose / $days;
 
-    $bmi = $weight / (1.75 * 1.75); // Assumption: Average height 1.75 m
-    $weightFactor = ($bmi > 30) ? 2.5 : 1.0;
-
-    $dose = $difference * self::IE_PER_NG_ML * $weightFactor;
-
-    if ($dose > self::MAX_SAFE_DOSE && $isLoadingPhase) {
-      return (int) round($dose);
-    } elseif ($dose > self::MAX_SAFE_DOSE) {
-      return self::MAX_SAFE_DOSE;
-    }
-
-    return (int) round($dose);
+    return (int) round($dailyDose);
   }
 
   /**
@@ -113,16 +104,17 @@ class VitaminDCalculator
    * @param float $targetLevel
    * @param float $weight
    * @param string $language Language (‘de’ or ‘en’)
+   * @param int $days Duration of loading phase
    * @return string
    */
-  public static function getRecommendation(float $currentLevel, float $targetLevel, float $weight, string $language = 'de'): string
+  public static function getRecommendation(float $currentLevel, float $targetLevel, float $weight, string $language = 'de', int $days = 30): string
   {
     if (!isset(self::$translations[$language])) {
       $language = 'en';
     }
 
     $translations = self::$translations[$language];
-    $loadingDose = self::calculateDailyDose($currentLevel, $targetLevel, $weight, true);
+    $loadingDose = self::calculateDailyDose($currentLevel, $targetLevel, $weight, $days);
     $maintenanceDose = self::calculateMaintenanceDose($weight);
 
     $recommendation = sprintf(
@@ -132,7 +124,7 @@ class VitaminDCalculator
     );
 
     if ($currentLevel < $targetLevel) {
-      $recommendation .= sprintf($translations['loading_dose'], $loadingDose);
+      $recommendation .= sprintf($translations['loading_dose'], $loadingDose, $days);
     } else {
       $recommendation .= $translations['already_in_range'];
     }
